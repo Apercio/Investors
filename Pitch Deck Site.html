@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realogix | Interactive Investor Report</title>
+    <!-- Chosen Palette: Realogix Brand Palette -->
+    <!-- Application Structure Plan: The structure remains a thematic scrolling dashboard but is enhanced with more detail. The Product section is now a "Platform" section with an interactive toggle to show the Mobile-First vs. Desktop Command Center duality, a key theme from the new docs. A new "Performance" section is added for specific KPIs, and a "Pricing" section is included. This better reflects the hybrid model and provides more granular data for investors. Interactions (toggles, accordions, chart hovers) are chosen to manage information density. -->
+    <!-- Visualization & Content Choices: 
+        - Platform Duality: Goal: Explain. Method: Interactive Toggle with HTML/CSS mock UIs. Interaction: Click to switch views. Justification: Clearly illustrates the core mobile/desktop product strategy. Library: Vanilla JS.
+        - Performance KPIs: Goal: Inform/Impress. Method: Animated KPI Cards. Interaction: Count-up on scroll. Justification: Highlights impressive, specific metrics from the new TDD. Library: Vanilla JS.
+        - Pricing Tiers: Goal: Inform. Method: HTML Table. Interaction: None. Justification: Clearly and simply presents the new, detailed pricing structure. Library: N/A.
+        - Revenue Projections: Goal: Show Change. Method: Interactive Line Chart. Interaction: Hover/toggle. Justification: Still the best way to show financial trajectory. Library: Chart.js.
+        - Risks: Goal: Build Trust. Method: Accordion. Interaction: Click to expand. Justification: Updated with new risks like "Desktop Adoption Resistance". Library: Vanilla JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #0F766E;
+            --color-accent: #14B8A6;
+            --color-light: #F8FAFC;
+            --color-dark: #334155;
+            --color-slate-100: #f1f5f9;
+            --color-slate-200: #e2e8f0;
+            --color-slate-300: #cbd5e1;
+            --color-slate-400: #94a3b8;
+            --color-slate-500: #64748b;
+            --color-slate-600: #475569;
+            --color-slate-800: #1e293b;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--color-light); color: var(--color-dark); }
+        h1, h2, h3, h4 { font-family: 'Montserrat', sans-serif; font-weight: 600; color: var(--color-slate-800); }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+        .kpi-card { transition: all 0.3s ease-in-out; }
+        .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.05); }
+        .nav-link.active { color: var(--color-accent); font-weight: 600; border-bottom: 2px solid var(--color-accent); }
+        .btn-toggle.active { background-color: var(--color-primary); color: white; }
+        .btn-toggle { background-color: var(--color-slate-200); color: var(--color-slate-600); }
+        .platform-btn.active { background-color: var(--color-primary); color: white; border-color: var(--color-primary); }
+        .platform-btn { background-color: white; color: var(--color-slate-600); border-color: var(--color-slate-300); }
+        .quadrant {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            border: 1px solid var(--color-slate-300);
+            position: relative;
+        }
+        .quadrant::before, .quadrant::after {
+            content: '';
+            position: absolute;
+            background-color: var(--color-slate-300);
+        }
+        .quadrant::before {
+            left: 50%;
+            top: 0;
+            width: 1px;
+            height: 100%;
+            transform: translateX(-50%);
+        }
+        .quadrant::after {
+            top: 50%;
+            left: 0;
+            height: 1px;
+            width: 100%;
+            transform: translateY(-50%);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-primary" style="color: var(--color-primary);">Realogix</h1>
+            <div class="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-600">
+                <a href="#market" class="nav-link py-2 transition-colors hover:text-accent" style="--color-accent: var(--color-accent);">Market</a>
+                <a href="#platform" class="nav-link py-2 transition-colors hover:text-accent" style="--color-accent: var(--color-accent);">Platform</a>
+                <a href="#competition" class="nav-link py-2 transition-colors hover:text-accent" style="--color-accent: var(--color-accent);">Competition</a>
+                <a href="#financials" class="nav-link py-2 transition-colors hover:text-accent" style="--color-accent: var(--color-accent);">Financials</a>
+                <a href="#pricing" class="nav-link py-2 transition-colors hover:text-accent" style="--color-accent: var(--color-accent);">Pricing</a>
+                <a href="#ask" class="nav-link py-2 transition-colors hover:text-accent" style="--color-accent: var(--color-accent);">The Ask</a>
+            </div>
+            <a href="mailto:invest@realogix.ai" class="hidden md:inline-block bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity shadow-sm" style="background-color: var(--color-primary);">Contact Us</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="py-16 md:py-24 text-center bg-slate-50 border-b border-slate-200">
+            <div class="container mx-auto px-6">
+                <h2 class="text-4xl md:text-5xl font-bold max-w-4xl mx-auto">The "AI Autopilot" for Real Estate Agents</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-slate-600">Realogix is a hybrid platform combining a <span class="font-semibold text-primary" style="color: var(--color-primary);">Mobile-First AI Agent</span> for field execution with a <span class="font-semibold text-primary" style="color: var(--color-primary);">Desktop Command Center</span> for analytics and strategy.</p>
+            </div>
+        </section>
+
+        <section id="founder" class="py-16 md:py-20">
+            <div class="container mx-auto px-6">
+                 <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold">The Vision Born from Experience</h3>
+                    <p class="mt-3 max-w-3xl mx-auto text-slate-600">Realogix was founded to solve a problem our CEO, Deauntre Murphy, experienced firsthand as a young real estate agent.</p>
+                </div>
+                <div class="max-w-4xl mx-auto grid md:grid-cols-3 gap-8 items-center">
+                    <div class="md:col-span-1 flex justify-center">
+                        <div class="w-40 h-40 rounded-full bg-slate-200 flex items-center justify-center">
+                             <span class="text-6xl">👨‍💼</span>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2 space-y-4">
+                        <p class="text-slate-600">"Licensed at 18, I quickly realized that 8 in 10 agents fail because they aren't trained in sales and are buried in administrative work. They're overworked, underpaid, and can't afford help. Leads go cold."</p>
+                        <p class="font-semibold text-slate-800">"I tried to automate my own business, but the tools lacked the personalization and autonomy needed. I founded Realogix to build the solution I wish I had: an AI team that handles the repetitive tasks, so agents can get back to the human side of real estate."</p>
+                        <p class="text-sm font-bold text-primary" style="color: var(--color-primary);">- Deauntre Murphy, Founder & CEO</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="market" class="py-16 md:py-20 bg-white border-t border-b border-slate-200">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold">A Massive, Growing, and Underserved Market</h3>
+                    <p class="mt-3 max-w-3xl mx-auto text-slate-600">The real estate software market is large and expanding, but the explosive growth is in AI-specific solutions. This represents a clear paradigm shift and a strategic opening for an AI-native platform like Realogix.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto">
+                    <div class="kpi-card bg-white p-6 rounded-xl border border-slate-200 text-center">
+                        <p class="text-sm font-semibold text-primary" style="color: var(--color-primary);">AI Market Size (by 2032)</p>
+                        <p class="text-5xl font-bold my-2" data-target="1.8" data-suffix="T">0</p>
+                        <p class="text-slate-500">Trillion USD @ 37.3% CAGR</p>
+                    </div>
+                    <div class="kpi-card bg-white p-6 rounded-xl border border-slate-200 text-center">
+                        <p class="text-sm font-semibold text-primary" style="color: var(--color-primary);">PropTech Market Size (by 2032)</p>
+                        <p class="text-5xl font-bold my-2" data-target="102.4" data-suffix="B">0</p>
+                        <p class="text-slate-500">Billion USD @ 15.8% CAGR</p>
+                    </div>
+                    <div class="kpi-card bg-white p-6 rounded-xl border border-slate-200 text-center">
+                        <p class="text-sm font-semibold text-primary" style="color: var(--color-primary);">Serviceable Obtainable Market</p>
+                        <p class="text-5xl font-bold my-2" data-target="1.5" data-suffix="B">0</p>
+                        <p class="text-slate-500">Billion USD - Initial Target</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="platform" class="py-16 md:py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold">A Hybrid Platform: Mobile Execution, Desktop Strategy</h3>
+                    <p class="mt-3 max-w-3xl mx-auto text-slate-600">Our core innovation is a dual-interface system. Agents use the mobile app for high-velocity fieldwork, while leveraging the desktop app for deep analysis and business optimization.</p>
+                    <div class="mt-6 flex justify-center gap-2">
+                        <button id="btn-mobile" class="platform-btn active text-sm font-semibold px-5 py-2 rounded-lg border transition-colors">📱 Mobile-First Execution</button>
+                        <button id="btn-desktop" class="platform-btn text-sm font-semibold px-5 py-2 rounded-lg border transition-colors">💻 Desktop Command Center</button>
+                    </div>
+                </div>
+                <div id="platform-content" class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                </div>
+            </div>
+        </section>
+        
+        <section id="competition" class="py-16 md:py-20 bg-white border-t border-b border-slate-200">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold">A New Category of Real Estate Software</h3>
+                    <p class="mt-3 max-w-3xl mx-auto text-slate-600">Existing tools are either manual CRMs or simple, AI-enabled features. Realogix is creating a new category defined by true autonomy.</p>
+                </div>
+                <div class="max-w-4xl mx-auto relative">
+                    <div class="absolute inset-0 flex items-center justify-center text-xs uppercase font-semibold text-slate-400">
+                        <span class="absolute top-2 left-1/2 -translate-x-1/2">High Autonomy</span>
+                        <span class="absolute bottom-2 left-1/2 -translate-x-1/2">Basic Automation</span>
+                        <span class="absolute top-1/2 -left-2 -translate-y-1/2 -rotate-90 origin-bottom-left">Manual Work</span>
+                        <span class="absolute top-1/2 -right-2 -translate-y-1/2 rotate-90 origin-bottom-right">AI-Enabled</span>
+                    </div>
+                    <div class="quadrant h-96 md:h-[500px]">
+                        <div id="q1" class="p-4 relative"></div>
+                        <div id="q2" class="p-4 relative"></div>
+                        <div id="q3" class="p-4 relative"></div>
+                        <div id="q4" class="p-4 relative"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="financials" class="py-16 md:py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-4">
+                    <h3 class="text-3xl md:text-4xl font-bold">A Clear Path to Profitability</h3>
+                    <p class="mt-3 max-w-3xl mx-auto text-slate-600">Our financial model demonstrates a capital-efficient path to significant ARR, driven by strong unit economics and a scalable SaaS model. Projections are based on mobile subscriptions and desktop add-ons.</p>
+                </div>
+                <div class="flex justify-center mb-12">
+                    <div class="p-1 bg-slate-200 rounded-lg flex space-x-1">
+                        <button id="btn-base" class="btn-toggle px-4 py-1.5 text-sm font-semibold rounded-md transition-colors active">Base Case</button>
+                        <button id="btn-visionary" class="btn-toggle px-4 py-1.5 text-sm font-semibold rounded-md transition-colors">Visionary Case</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="financialsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="pricing" class="py-16 md:py-20 bg-white border-t border-b border-slate-200">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold">Tiered Pricing for Growth</h3>
+                    <p class="mt-3 max-w-3xl mx-auto text-slate-600">Our pricing scales with agent and team needs, starting with a powerful mobile platform and offering the Desktop Command Center as a value-add for power users and teams.</p>
+                </div>
+                <div class="max-w-5xl mx-auto overflow-x-auto">
+                    <table class="w-full text-sm text-left min-w-[600px]">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="p-4 font-semibold">Tier</th>
+                                <th class="p-4 font-semibold">Core Platform</th>
+                                <th class="p-4 font-semibold">Price (per user/mo)</th>
+                                <th class="p-4 font-semibold">Key Features</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            <tr>
+                                <td class="p-4 font-semibold text-primary" style="color: var(--color-primary);">Professional</td>
+                                <td class="p-4">📱 Mobile App</td>
+                                <td class="p-4 font-bold text-lg">$199</td>
+                                <td class="p-4 text-slate-600">Up to 300 leads, 1,500 AI voice mins, Property Matching</td>
+                            </tr>
+                            <tr>
+                                <td class="p-4 font-semibold text-primary" style="color: var(--color-primary);">Scale</td>
+                                <td class="p-4">📱 Mobile App</td>
+                                <td class="p-4 font-bold text-lg">$399</td>
+                                <td class="p-4 text-slate-600">Unlimited leads, 5,000 AI voice mins, API Access</td>
+                            </tr>
+                            <tr class="bg-slate-50">
+                                <td class="p-4 font-semibold text-accent" style="color: var(--color-accent);">Desktop Add-on</td>
+                                <td class="p-4">💻 Desktop App</td>
+                                <td class="p-4 font-bold text-lg">+$99</td>
+                                <td class="p-4 text-slate-600">Advanced Analytics, Team Management, Bulk Operations</td>
+                            </tr>
+                             <tr>
+                                <td class="p-4 font-semibold text-primary" style="color: var(--color-primary);">Teams</td>
+                                <td class="p-4">📱+💻</td>
+                                <td class="p-4 font-bold text-lg">$299</td>
+                                <td class="p-4 text-slate-600">Includes all features for teams of 3+ users</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <section id="ask" class="py-16 md:py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold">The Ask: Join Us in Building the Future</h3>
+                    <p class="mt-3 max-w-3xl mx-auto text-slate-600">We are seeking a $500k angel investment to accelerate product development, expand our team, and scale our go-to-market efforts.</p>
+                </div>
+                <div class="max-w-4xl mx-auto grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h4 class="text-xl font-bold mb-4">Use of Funds</h4>
+                        <p class="text-slate-600">This investment will be strategically allocated to fuel growth and achieve our key milestones, with a primary focus on building a world-class product.</p>
+                        <ul class="mt-4 space-y-2">
+                            <li class="flex items-center"><span class="w-3 h-3 rounded-full mr-3" style="background-color: #f97316;"></span>Product Development: 50%</li>
+                            <li class="flex items-center"><span class="w-3 h-3 rounded-full mr-3" style="background-color: #ef4444;"></span>Marketing & User Acquisition: 30%</li>
+                            <li class="flex items-center"><span class="w-3 h-3 rounded-full mr-3" style="background-color: #a855f7;"></span>Infrastructure & Operations: 10%</li>
+                            <li class="flex items-center"><span class="w-3 h-3 rounded-full mr-3" style="background-color: #6366f1;"></span>Customer Experience & Research: 5%</li>
+                             <li class="flex items-center"><span class="w-3 h-3 rounded-full mr-3" style="background-color: #84cc16;"></span>Contingency: 5%</li>
+                        </ul>
+                    </div>
+                    <div class="chart-container h-64 md:h-80">
+                        <canvas id="fundsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-800 text-white">
+        <div class="container mx-auto px-6 py-12 text-center">
+            <h3 class="text-2xl font-bold">Invest in the Future of Real Estate</h3>
+            <p class="mt-3 max-w-xl mx-auto text-slate-300">We are raising a $500k pre-seed round closing Q4 2025. This is an opportunity to get in on the ground floor of the next-generation operating system for real estate.</p>
+            <div class="mt-6">
+                <a href="mailto:invest@realogix.ai" class="bg-accent text-white font-semibold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity shadow-md" style="background-color: var(--color-accent);">Request Investor Memo</a>
+            </div>
+            <p class="mt-8 text-xs text-slate-400">&copy; 2025 Realogix, Inc. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Data Store
+            const financialData = {
+                base: {
+                    labels: ['2025', '2026', '2027', '2028', '2029'],
+                    revenue: [0.18, 1.2, 4.1, 10.8, 22.6],
+                    arr: [0.45, 1.8, 6.0, 14.0, 27.0]
+                },
+                visionary: {
+                    labels: ['2025', '2026', '2027', '2028', '2029'],
+                    revenue: [0.25, 2.0, 7.5, 20.0, 40.0],
+                    arr: [0.6, 3.0, 10.0, 25.0, 45.0]
+                }
+            };
+
+            const platformContentData = {
+                mobile: `
+                    <div class="space-y-4">
+                        <h4 class="text-2xl font-bold">📱 Mobile-First Execution</h4>
+                        <p class="text-slate-600">The mobile app is designed for agents in the field. It prioritizes speed and hands-free operation, adhering to our "Driving Test" standard. The core is the Human-in-the-Loop AI workflow.</p>
+                        <ul class="space-y-2 text-slate-600">
+                            <li class="flex items-start"><span class="text-accent mr-2 mt-1" style="color: var(--color-accent);">✔</span><span><strong>Immediate AI Response:</strong> AI calls leads in under 5 minutes.</span></li>
+                            <li class="flex items-start"><span class="text-accent mr-2 mt-1" style="color: var(--color-accent);">✔</span><span><strong>Voice Commands:</strong> Manage your entire pipeline without typing.</span></li>
+                            <li class="flex items-start"><span class="text-accent mr-2 mt-1" style="color: var(--color-accent);">✔</span><span><strong>AI Action Approval:</strong> AI proposes, you approve with a single tap.</span></li>
+                        </ul>
+                    </div>
+                    <div class="bg-slate-800 p-4 rounded-lg shadow-lg">
+                        <div class="bg-slate-700 p-4 rounded">
+                            <p class="text-xs font-mono text-slate-400">New Lead: Sarah M.</p>
+                            <div class="mt-4 bg-slate-900 p-3 rounded text-white">
+                                <p class="text-sm font-semibold">🤖 AI Action Plan:</p>
+                                <p class="mt-2 text-xs font-mono">1. Call Sarah about 2BR apt search.</p>
+                                <p class="mt-1 text-xs font-mono">2. If no answer: SMS in 15 mins.</p>
+                                <div class="mt-4 flex gap-2">
+                                    <button class="flex-1 bg-accent text-white text-xs font-bold py-2 rounded" style="background-color: var(--color-accent);">APPROVE</button>
+                                    <button class="flex-1 bg-slate-600 text-white text-xs font-bold py-2 rounded">MODIFY</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                desktop: `
+                     <div class="space-y-4">
+                        <h4 class="text-2xl font-bold">💻 Desktop Command Center</h4>
+                        <p class="text-slate-600">The desktop app is for strategy and analysis. It transforms raw mobile activity data into actionable business intelligence, allowing agents to optimize funnels, manage teams, and run bulk operations.</p>
+                         <ul class="space-y-2 text-slate-600">
+                            <li class="flex items-start"><span class="text-accent mr-2 mt-1" style="color: var(--color-accent);">✔</span><span><strong>Advanced Analytics:</strong> Deep dive into conversion funnels and revenue.</span></li>
+                            <li class="flex items-start"><span class="text-accent mr-2 mt-1" style="color: var(--color-accent);">✔</span><span><strong>Team Management:</strong> Monitor team performance and distribute leads.</span></li>
+                            <li class="flex items-start"><span class="text-accent mr-2 mt-1" style="color: var(--color-accent);">✔</span><span><strong>Bulk Operations:</strong> Manage hundreds of leads efficiently.</span></li>
+                        </ul>
+                    </div>
+                    <div class="bg-slate-200 p-4 rounded-lg shadow-inner border border-slate-300">
+                        <div class="bg-white p-4 rounded">
+                             <p class="text-sm font-semibold text-slate-700">Performance Overview</p>
+                             <div class="mt-2 h-24 bg-slate-100 rounded flex items-center justify-center">
+                                <p class="text-xs text-slate-400">[ Conversion Funnel Chart ]</p>
+                             </div>
+                             <div class="mt-2 h-16 bg-slate-100 rounded flex items-center justify-center">
+                                <p class="text-xs text-slate-400">[ Territory Heatmap ]</p>
+                             </div>
+                        </div>
+                    </div>
+                `
+            };
+            
+            const competitors = [
+                { name: 'Realogix', x: 0.8, y: 0.9, quadrant: 2, color: 'var(--color-accent)', size: 16 },
+                { name: 'Propy', x: 0.6, y: 0.7, quadrant: 2, color: 'var(--color-slate-500)', size: 10 },
+                { name: 'Epique', x: 0.4, y: 0.75, quadrant: 2, color: 'var(--color-slate-500)', size: 10 },
+                { name: 'Dotloop', x: 0.2, y: 0.3, quadrant: 3, color: 'var(--color-slate-500)', size: 10 },
+                { name: 'HubSpot', x: 0.3, y: 0.2, quadrant: 4, color: 'var(--color-slate-500)', size: 10 },
+                { name: 'Zoho CRM', x: 0.4, y: 0.25, quadrant: 4, color: 'var(--color-slate-500)', size: 10 },
+                { name: 'CINC', x: 0.7, y: 0.15, quadrant: 4, color: 'var(--color-slate-500)', size: 10 },
+                { name: 'Inside RE', x: 0.6, y: 0.2, quadrant: 4, color: 'var(--color-slate-500)', size: 10 },
+            ];
+
+            function renderCompetitors() {
+                competitors.forEach(c => {
+                    const q = document.getElementById(`q${c.quadrant}`);
+                    const point = document.createElement('div');
+                    point.className = 'absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer';
+                    point.style.left = `${c.x * 100}%`;
+                    point.style.top = `${(1 - c.y) * 100}%`;
+                    point.innerHTML = `
+                        <div class="w-4 h-4 rounded-full" style="background-color: ${c.color}; width: ${c.size}px; height: ${c.size}px;"></div>
+                        <span class="text-xs font-semibold mt-1" style="color: ${c.color};">${c.name}</span>
+                    `;
+                    q.appendChild(point);
+                });
+            }
+            renderCompetitors();
+
+            // Platform Toggle Logic
+            const platformContent = document.getElementById('platform-content');
+            const btnMobile = document.getElementById('btn-mobile');
+            const btnDesktop = document.getElementById('btn-desktop');
+
+            function updatePlatformView(view) {
+                platformContent.innerHTML = platformContentData[view];
+                if (view === 'mobile') {
+                    btnMobile.classList.add('active');
+                    btnDesktop.classList.remove('active');
+                } else {
+                    btnDesktop.classList.add('active');
+                    btnMobile.classList.remove('active');
+                }
+            }
+            btnMobile.addEventListener('click', () => updatePlatformView('mobile'));
+            btnDesktop.addEventListener('click', () => updatePlatformView('desktop'));
+            updatePlatformView('mobile');
+
+            // Chart.js Financials Chart
+            const finCtx = document.getElementById('financialsChart').getContext('2d');
+            let financialsChart;
+
+            function createOrUpdateFinancialsChart(scenario) {
+                const data = financialData[scenario];
+                if (financialsChart) {
+                    financialsChart.data.labels = data.labels;
+                    financialsChart.data.datasets[0].data = data.revenue;
+                    financialsChart.data.datasets[1].data = data.arr;
+                    financialsChart.update();
+                } else {
+                    financialsChart = new Chart(finCtx, {
+                        type: 'line',
+                        data: {
+                            labels: data.labels,
+                            datasets: [{
+                                label: 'Revenue (in millions)',
+                                data: data.revenue,
+                                borderColor: 'var(--color-primary)',
+                                backgroundColor: 'rgba(15, 118, 110, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: 'var(--color-primary)',
+                                pointRadius: 5
+                            }, {
+                                label: 'Ending ARR (in millions)',
+                                data: data.arr,
+                                borderColor: 'var(--color-accent)',
+                                backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                                borderWidth: 3,
+                                fill: false,
+                                tension: 0.4,
+                                pointBackgroundColor: 'var(--color-accent)',
+                                pointRadius: 5,
+                                borderDash: [5, 5]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, ticks: { callback: (v) => '$' + v + 'M' } } },
+                            plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: $${c.parsed.y}M` } } },
+                            interaction: { intersect: false, mode: 'index' }
+                        }
+                    });
+                }
+            }
+            createOrUpdateFinancialsChart('base');
+
+            // Use of Funds Chart
+            const fundsCtx = document.getElementById('fundsChart').getContext('2d');
+            new Chart(fundsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Product Development', 'Marketing & Acquisition', 'Infrastructure & Ops', 'CustEx & Research', 'Contingency'],
+                    datasets: [{
+                        data: [50, 30, 10, 5, 5],
+                        backgroundColor: ['#f97316', '#ef4444', '#a855f7', '#6366f1', '#84cc16'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (c) => `${c.label}: ${c.raw}%` } }
+                    }
+                }
+            });
+
+            const btnBase = document.getElementById('btn-base');
+            const btnVisionary = document.getElementById('btn-visionary');
+            btnBase.addEventListener('click', () => {
+                createOrUpdateFinancialsChart('base');
+                btnBase.classList.add('active');
+                btnVisionary.classList.remove('active');
+            });
+            btnVisionary.addEventListener('click', () => {
+                createOrUpdateFinancialsChart('visionary');
+                btnVisionary.classList.add('active');
+                btnBase.classList.remove('active');
+            });
+
+            // Intersection Observer for animations
+            const animateOnScroll = (element, animationFn) => {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            animationFn(element);
+                            observer.unobserve(element);
+                        }
+                    });
+                }, { threshold: 0.5 });
+                observer.observe(element);
+            };
+
+            // KPI Counter Animation
+            const countUp = (el) => {
+                const target = parseFloat(el.dataset.target);
+                const suffix = el.dataset.suffix || '';
+                let current = 0;
+                const increment = target / 100;
+                const update = () => {
+                    if (current < target) {
+                        current += increment;
+                        let displayValue = current.toLocaleString(undefined, {
+                            minimumFractionDigits: target.toString().includes('.') ? 1 : 0,
+                            maximumFractionDigits: 1
+                        });
+                        el.textContent = displayValue + suffix;
+                        requestAnimationFrame(update);
+                    } else {
+                        let finalValue = target.toLocaleString(undefined, {
+                            minimumFractionDigits: target.toString().includes('.') ? 1 : 0,
+                            maximumFractionDigits: 1
+                        });
+                        el.textContent = finalValue + suffix;
+                    }
+                };
+                update();
+            };
+
+            document.querySelectorAll('[data-target]').forEach(el => {
+                animateOnScroll(el, countUp);
+            });
+            
+            // Nav scroll spy
+            const sections = document.querySelectorAll('main > section[id]');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const observerOptions = { rootMargin: '-40% 0px -60% 0px' };
+
+            const sectionObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                sectionObserver.observe(section);
+            });
+
+        });
+    </script>
+</body>
+</html>
+
